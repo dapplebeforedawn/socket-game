@@ -30,19 +30,20 @@ class GameSever
     clients = CLIENTS.last.clone
     states  = STATES.last.clone
     
-    # Every client not in state needs to get a starting pos_x and pos_y
+    # Every client not in state gets added
     states_inited = clients.keys.inject(states) do |memo, client_ip|
       next memo if memo[client_ip]
       initial = clients[client_ip].clone
       memo.update({client_ip => initial})
     end
-    moved_clients  = clients.merge(clients) do |key, ov|
-      ov.calc_position(states_inited[key])
+    moved_clients  = states_inited.merge(states_inited) do |key, ov|
+      ov.calc_position(clients[key])
     end
     scored_clients = moved_clients.merge(moved_clients) do |key, ov|
       ov.calc_colision(moved_clients)
     end
     STATES << scored_clients
+    #p scored_clients.values.map &:score
     scored_clients
   end
 

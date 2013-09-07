@@ -4,24 +4,30 @@ require 'socket'
 require 'json'
 require 'curses'
 
-class ClientState < Struct.new(:conf, :pos_x, :pos_y, :score)
+
+class ClientState < Struct.new(:conf, :pos_x, :pos_y, :score, :ident)
 end
 
 class State
   attr_accessor :clients
   def initialize client_hashes
     @clients = client_hashes.map do |ch| 
-      ClientState.new ch["conf"], ch["pos_x"], ch["pos_y"], ch["score"]
+      ClientState.new *ch.values
     end
   end
 end
 
+Thread.abort_on_exception = true
+
 CLIENT_PORT     = ARGV[0] || 9001
 SERVER_IP       = '127.0.0.1'
 SERVER_PORT     = 9000
+SOCK            = UDPSocket.new.tap{ |s| s.connect(SERVER_IP, SERVER_PORT) }
 GAME_WIN_HEIGHT = 10
 GAME_WIN_WIDTH  = 60
 LOG_WIN_HEIGHT  = 1
+
+SHIP            = ARGV[1]
 
 Curses.init_screen
 Curses.noecho
@@ -53,21 +59,30 @@ def debug_log(msg)
 end
 
 def notify_server(mvmt=' ')
-  sock = UDPSocket.new.tap{|s| s.connect(SERVER_IP, SERVER_PORT)}
-  msg  = {conf: 'xefe', mvmt: mvmt, port: CLIENT_PORT, win_width: GAME_WIN_WIDTH, win_height: GAME_WIN_HEIGHT }.to_json
-  sock.send(msg, 0)
+  msg  = {conf: SHIP, mvmt: mvmt, port: CLIENT_PORT, win_width: GAME_WIN_WIDTH, win_height: GAME_WIN_HEIGHT }.to_json
+  SOCK.send(msg, 0)
 end
 
 def log(msg)
+  @log.clear
+  @log.setpos 0, 0
   @log.addstr msg
   @log.refresh
-  @log.setpos 0, 0
+end
+
+def ident
+  "#{SOCK.addr.last}:#{CLIENT_PORT}"
 end
 
 def mvmt_valid?(mvmt)
   mvmt.match /[hjkl\s]/i
 end
 INVALID_MVMT = "How about h, j, k, l or <space> instead?"
+
+def update_score(clients)
+  me = clients.find { |state| state.ident == ident }
+  log "You Scored: #{me.score}"
+end
 
 # Send my initial movement to the server to connect
 notify_server
@@ -87,6 +102,7 @@ Thread.new do
   Socket.udp_server_loop(CLIENT_PORT) do |msg, msg_src|
     debug_log msg
     new_state = State.new(JSON.parse(msg))
-    draw new_state
+    draw         new_state
+    update_score new_state.clients
   end
 end.join

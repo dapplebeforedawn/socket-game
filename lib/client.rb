@@ -33,24 +33,23 @@ class Client
 
   def calc_colision(clients)
     client = clone
-    clone.instance_eval do
-      @score += clients.keys.inject(0) do |memo, other_client_ip|
-        next memo if other_client_ip == ip
-        memo +=1 if client.occludes_vowel?(clients[other_client_ip])
-        memo -=1 if clients[other_client_ip].occludes_vowel?(client)
+    client.instance_eval do
+      state_score = clients[ident].score
+      @score  = clients.keys.inject(state_score) do |memo, other_client_id|
+        next memo if other_client_id == ident
+        memo += 1 if occludes_vowel?(clients[other_client_id])
+        memo -= 1 if clients[other_client_id].occludes_vowel?(self)
         memo
       end
     end
     client
   end
 
-  def calc_position(prev_state)
+  def calc_position(next_state)
     new_client = clone
     new_client.instance_eval do
-      @pos_x = prev_state.pos_x
-      @pos_y = prev_state.pos_y
 
-      req.mvmts.each do |mvmt|
+      next_state.req.mvmts.each do |mvmt|
         case mvmt
         when /h/i
           @pos_x += -1
@@ -66,7 +65,7 @@ class Client
     end
     new_client
   end
-
+  
   def keep_in_bounds
      @pos_x = 1 if pos_x <= 1
      @pos_y = 1 if pos_y <= 1
@@ -78,7 +77,7 @@ class Client
 
   # We share a coord, and other is a vowell
   def occludes_vowel?(other)
-    vowels       = /[aeiouy]/i
+    vowels      = /[aeiouy]/i
     pos_overlap = ->(x_off, y_off){
       other.pos_x+x_off == pos_x    &&
       other.pos_y+y_off == pos_y    ||
@@ -95,10 +94,10 @@ class Client
       bl = other.conf.slice(2)
       br = other.conf.slice(3)
 
-      tl.match(vowels) && pos_overlap[0,0] ||
+      !!(tl.match(vowels) && pos_overlap[0,0] ||
       tr.match(vowels) && pos_overlap[1,0] ||
       bl.match(vowels) && pos_overlap[0,1] ||
-      br.match(vowels) && pos_overlap[1,1]
+      br.match(vowels) && pos_overlap[1,1])
   end
 end
 
