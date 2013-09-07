@@ -2,85 +2,63 @@
 
 require 'socket'
 require 'json'
-SERVER_PORT = 9000
+require_relative './lib/client'
 
-clients    = {}
-Socket.udp_server_loop(SERVER_PORT) do |msg, msg_src|
-  remote   = msg_src.remote_address
-  ip, port = remote.ip_address, remote.ip_port
-  data     = JSON.parse(msg)
-  clients[ip] ||= Client.new data["conf"], ip, port, ClientReq.new
-  clients[ip].req.add_mvmts data["mvmt"]
-end
+class GameSever
+  Thread.abort_on_exception = true
+  SERVER_PORT = 9000
+  CYCLE_TIME  = 2
 
-def calc_state
-  clients.map do |client|
-    client.calc_position!
-
-    colision_value = clients.inject(0) do |memo, other_client|
-      memo +=1 if client.occludes_vowel(other_client)
-      memo -=1 if other_client.occludes_vowel(client)
-      memo
+  CLIENTS    = [{}]
+  Thread.new do
+    Socket.udp_server_loop(SERVER_PORT) do |msg, msg_src|
+      remote  = msg_src.remote_address
+      ip      = remote.ip_address
+      data    = JSON.parse(msg)
+      port    = data["port"]
+      clients = CLIENTS.last.clone
+      key     = "#{ip}:#{port}"
+      clients[key] ||= Client.new data["conf"], ip, port, ClientReq.new
+      clients[key].req.add_mvmts data["mvmt"]
+      CLIENTS << clients
     end
-
-    ClientRes.new client.pos_x, client.pos_y, colision_value
   end
-end
 
-class Client < Struct.new(:conf, :ip, :port, :req)
-  attr_accessor :pos_x
-  attr_accessor :pos_y
+  STATES  = [{}]
+  def self.calc_state
+    clients = CLIENTS.last.clone
+    states  = STATES.last.clone
+    
+    # Every client not in state needs to get a starting pos_x and pos_y
+    states_inited = clients.keys.inject(states) do |memo, client_ip|
+      next memo if memo[client_ip]
+      initial = clients[client_ip].clone
+      initial.pos_x, initial.pos_y = rand(9), rand(9)
+      memo.update({client_ip => initial})
+    end
+    moved_clients  = clients.merge(clients) do |key, ov|
+      ov.calc_position(states_inited[key])
+    end
+    scored_clients = moved_clients.merge(moved_clients) do |key, ov|
+      ov.calc_colision(moved_clients)
+    end
+    STATES << scored_clients
+    scored_clients
+  end
 
-  def calc_position!
-    req.mvmts.each do |mvmt|
-      case mvmt
-      when /h/i
-        pos_x += -1
-      when /j/i
-        pos_y += -1
-      when /k/i
-        pos_y +=  1
-      when /l/i
-        pos_x +=  1
+  Thread.new do
+    loop do
+      clients = calc_state
+      response = clients.map do |client_ip, client|
+        client.calc_response.to_h
       end
+      clients.each do |ip, client|
+        sock = UDPSocket.new.tap{|s| s.connect(client.ip, client.port)}
+        msg  = response.to_json
+        sock.send(msg, 0)
+      end
+      sleep CYCLE_TIME
     end
-  end
+  end.join
 
-  # We share a coord, and other is a vowell
-  def occludes_vowel?(other)
-    vowels       = /[aeiouy]/i
-    pos_overlap? = ->(x_off, y_off){
-      other.pos_x+x_off == pos_x    &&
-      other.pos_y+y_off == pos_y    ||
-      other.pos_x+x_off == pos_x+1  &&
-      other.pos_y+y_off == pos_y    ||
-      other.pos_x+x_off == pos_x    &&
-      other.pos_y+y_off == pos_y+1  ||
-      other.pos_x+x_off == pos_x+1  &&
-      other.pos_y+y_off == pos_y+1 
-    }
-
-      tl = other.conf.slice(0)
-      tr = other.conf.slice(1)
-      bl = other.conf.slice(2)
-      br = other.conf.slice(3)
-
-      tl.match(vowels) && pos_overlap[0,0] ||
-      tr.match(vowels) && pos_overlap[1,0] ||
-      bl.match(vowels) && pos_overlap[0,1] ||
-      br.match(vowels) && pos_overlap[1,1]
-  end
-end
-
-class ClientRes < Struct.new(:pos_x, :pos_y, :colision_value)
-end
-
-class ClientReq
-  MAX_MVMT = 3
-  attr_reader :mvmts
-  def add_mvmts mvmt
-    @mvmts << mvmt
-    @mvmts.shift if @mvmt.size > MAX_MVMT
-    @mvmts
-  end
 end
