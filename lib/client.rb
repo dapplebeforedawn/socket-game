@@ -1,20 +1,19 @@
 # All would-be mutating methods return a copy
 # of the client.
 class Client
-  GAME_WIN_HEIGHT = 10
-  GAME_WIN_WIDTH  = 60
-
   [ :pos_x, :pos_y, :score, :res,
     :conf,  :ip,    :port,  :req  ].each { |attr| attr_reader attr }
 
-  def initialize conf, ip, port, req, pos_x=rand(GAME_WIN_WIDTH), pos_y=rand(GAME_WIN_HEIGHT)
-    @conf  = conf
-    @ip    = ip
-    @port  = port
-    @req   = req
-    @pos_x = pos_x
-    @pos_y = pos_y
-    @score = 0
+  def initialize conf, ip, port, req, win_width, win_height, pos_x=nil, pos_y=nil
+    @conf       = conf
+    @ip         = ip
+    @port       = port
+    @req        = req
+    @win_width  = win_width
+    @win_height = win_height
+    @pos_x      = pos_x || rand(@win_width)
+    @pos_y      = pos_y || rand(@win_height)
+    @score      = 0
   end
 
   def ==(other)
@@ -69,11 +68,11 @@ class Client
   end
 
   def keep_in_bounds
-     @pos_x = 0 if pos_x < 0
-     @pos_y = 0 if pos_y < 0
+     @pos_x = 1 if pos_x <= 1
+     @pos_y = 1 if pos_y <= 1
 
-     @pos_x = GAME_WIN_WIDTH  - 1 if pos_x >= GAME_WIN_WIDTH
-     @pos_y = GAME_WIN_HEIGHT - 1 if pos_y >= GAME_WIN_HEIGHT
+     @pos_x = @win_width  - 3 if pos_x >= @win_width  - 3 
+     @pos_y = @win_height - 3 if pos_y >= @win_height - 3
   end
   private :keep_in_bounds
 

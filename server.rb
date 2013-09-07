@@ -7,7 +7,7 @@ require_relative './lib/client'
 class GameSever
   Thread.abort_on_exception = true
   SERVER_PORT     = 9000
-  CYCLE_TIME      = 0.1
+  CYCLE_TIME      = 1
 
   CLIENTS    = [{}]
   Thread.new do
@@ -17,7 +17,7 @@ class GameSever
       data    = JSON.parse(msg)
       port    = data["port"]
       clients = CLIENTS.last.clone
-      client  = Client.new data["conf"], ip, port, ClientReq.new
+      client  = Client.new data["conf"], ip, port, ClientReq.new, data["win_width"], data["win_height"]
       key     = client.ident
       clients[key] ||= client
       clients[key].req.add_mvmts data["mvmt"]

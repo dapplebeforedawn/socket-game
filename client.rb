@@ -54,7 +54,7 @@ end
 
 def notify_server(mvmt=' ')
   sock = UDPSocket.new.tap{|s| s.connect(SERVER_IP, SERVER_PORT)}
-  msg  =  {conf: 'xefe', mvmt: mvmt, port: CLIENT_PORT}.to_json
+  msg  = {conf: 'xefe', mvmt: mvmt, port: CLIENT_PORT, win_width: GAME_WIN_WIDTH, win_height: GAME_WIN_HEIGHT }.to_json
   sock.send(msg, 0)
 end
 
