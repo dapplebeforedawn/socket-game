@@ -25,6 +25,12 @@ class GameSever
     end
   end
 
+  # Pull in the previous state and us it as a seed, 
+  # applying changes from the CLIENTS stack to work out
+  # the new position and the new scores
+  #
+  # Lesson learned: Don't use the new state as the base, use the
+  # old state as the base an FF changes on top of it  **mind blown**
   STATES  = [{}]
   def self.calc_state
     clients = CLIENTS.last.clone

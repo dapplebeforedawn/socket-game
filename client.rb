@@ -4,7 +4,6 @@ require 'socket'
 require 'json'
 require 'curses'
 
-
 class ClientState < Struct.new(:conf, :pos_x, :pos_y, :score, :ident)
 end
 
@@ -26,6 +25,7 @@ SOCK            = UDPSocket.new.tap{ |s| s.connect(SERVER_IP, SERVER_PORT) }
 GAME_WIN_HEIGHT = 10
 GAME_WIN_WIDTH  = 60
 LOG_WIN_HEIGHT  = 1
+UPDATES         = []
 
 SHIP            = ARGV[1]
 
@@ -38,8 +38,9 @@ at_exit { Curses.close_screen }
 @log = Curses::Window.new( LOG_WIN_HEIGHT,  GAME_WIN_WIDTH, GAME_WIN_HEIGHT, 0 )
 @win.box("|", "-")
 
-def draw(new_state)
+def draw(new_state, old_state)
   new_state.clients.each do |state|
+    # add colorization here
     @win.setpos state.pos_y, state.pos_x
     @win.addch state.conf.slice(0)
     @win.addch state.conf.slice(1)
@@ -102,7 +103,9 @@ Thread.new do
   Socket.udp_server_loop(CLIENT_PORT) do |msg, msg_src|
     debug_log msg
     new_state = State.new(JSON.parse(msg))
-    draw         new_state
+    old_state = UPDATES.last
+    UPDATES   << new_state
+    draw         new_state, old_state
     update_score new_state.clients
   end
 end.join
