@@ -6,8 +6,8 @@ require_relative './lib/client'
 
 class GameSever
   Thread.abort_on_exception = true
-  SERVER_PORT = 9000
-  CYCLE_TIME  = 2
+  SERVER_PORT     = 9000
+  CYCLE_TIME      = 0.1
 
   CLIENTS    = [{}]
   Thread.new do
@@ -17,8 +17,9 @@ class GameSever
       data    = JSON.parse(msg)
       port    = data["port"]
       clients = CLIENTS.last.clone
-      key     = "#{ip}:#{port}"
-      clients[key] ||= Client.new data["conf"], ip, port, ClientReq.new
+      client  = Client.new data["conf"], ip, port, ClientReq.new
+      key     = client.ident
+      clients[key] ||= client
       clients[key].req.add_mvmts data["mvmt"]
       CLIENTS << clients
     end
@@ -33,7 +34,6 @@ class GameSever
     states_inited = clients.keys.inject(states) do |memo, client_ip|
       next memo if memo[client_ip]
       initial = clients[client_ip].clone
-      initial.pos_x, initial.pos_y = rand(9), rand(9)
       memo.update({client_ip => initial})
     end
     moved_clients  = clients.merge(clients) do |key, ov|
