@@ -112,7 +112,10 @@ class TitleScreen
         curse.call(idx)
       end
       Curses.refresh
-      Curses.getch
+      Curses.getch # Wait for dismissal
+
+      Curses.clear
+      Curses.refresh
     end
 
   end
