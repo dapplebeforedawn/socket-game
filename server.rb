@@ -2,7 +2,7 @@
 
 require 'socket'
 require 'json'
-require_relative './lib/client'
+require_relative './lib/server/client'
 
 class GameSever
   Thread.abort_on_exception = true
