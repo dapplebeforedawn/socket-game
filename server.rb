@@ -1,11 +1,31 @@
 #! /usr/bin/env ruby
+#
+# I realized after bumbling on to it being the right way than
+# my idea of using to stacks of data, that either loop either
+# reads from or writes to, but never both is basically the same
+# as pipes (they also have a read and a write end).
+
+#
+# Ending the server:
+#   You could do a signal, but then you can't pipeline.
+#   You can kill the server by writing the the killpipe
+#   ("kill_pipe" by default), E.g:
+#     `echo "" > kill_pipe`
+#
+#   This lets you pipe the output (user scores!) into something
+#   usefull like `column`.  E.g:
+#     `./server.rb | column -t  -s,`
+#
+
+Thread.abort_on_exception = true
 
 require 'socket'
 require 'json'
 require_relative './lib/server/client'
+require_relative './lib/server/exit_by_pipe'
 
 class GameSever
-  Thread.abort_on_exception = true
+
   SERVER_PORT     = 9000
   CYCLE_TIME      = 1
 
@@ -53,7 +73,7 @@ class GameSever
     scored_clients
   end
 
-  Thread.new do
+  game_loop = Thread.new do
     loop do
       clients = calc_state
       response = clients.map do |client_ip, client|
@@ -66,6 +86,15 @@ class GameSever
       end
       sleep CYCLE_TIME
     end
-  end.join
+  end
+
+  # Kill the program by writing to kill pipe
+  ExitByPipe.join do
+    puts "Game Results:"
+    puts "============="
+    STATES.last.each do |k, v|
+      puts [k, v.conf, v.score].join(',')
+    end
+  end
 
 end
