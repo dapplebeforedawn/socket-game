@@ -47,7 +47,7 @@ class TitleScreen
         text = " - Use the h, j ,k and l keys to move your ship  "
         setpos(text, idx)
     }, ->(idx) {
-        text = " - <space> will insert a \"no move\" unit        "
+        text = " - <space> will insert a \"no move\" unit         "
         setpos(text, idx)
     }, ->(idx) {
         text = " - You get three motion units per game cycle     "
@@ -79,10 +79,10 @@ class TitleScreen
         text = " - If a non-vowel [aeiouy] character on your ship"
         setpos(text, idx)
     }, ->(idx) {
-        text = "   cover the vowel of someone else's ship you get"
+        text = "   covers  the vowel of someone else's ship you  "
         setpos(text, idx)
     }, ->(idx) {
-        text = "   one(1) point.                                 "
+        text = "   get one(1) point.                             "
         setpos(text, idx)
     }, ->(idx) {
         text = " - If one of your vowels is covered, you loose   "
