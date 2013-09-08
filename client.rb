@@ -4,13 +4,13 @@ Thread.abort_on_exception = true
 require 'socket'
 require 'json'
 require 'curses'
-require_relative './lib/client/render'
-require_relative './lib/client/state'
-require_relative './lib/client/title_screen'
-require_relative './lib/client/options'
+require_relative File.join *%w( lib client render )
+require_relative File.join *%w( lib client state )
+require_relative File.join *%w( lib client title_screen )
+require_relative File.join *%w( lib client options )
 
 options = Options.parse!
-require_relative './lib/client/debug_log' if options.debug
+require_relative File.join(*%w( lib client debug_log )) if options.debug
 
 SHIP            = ARGV[0]
 CLIENT_PORT     = options.client_port

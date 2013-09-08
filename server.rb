@@ -14,15 +14,19 @@
 #
 #   This lets you pipe the output (user scores!) into something
 #   usefull like `column`.  E.g:
-#     `./server.rb | column -t  -s,`
+#     ````
+#     ./server.rb | column -t  -s, | cat \
+#       <(echo "Game Results:") \
+#       <(echo "========================") -
+#     ````
 #
 
 Thread.abort_on_exception = true
 
 require 'socket'
 require 'json'
-require_relative './lib/server/client'
-require_relative './lib/server/exit_by_pipe'
+require_relative File.join *%w( lib server client )
+require_relative File.join *%W( lib server exit_by_pipe )
 
 class GameSever
 
@@ -90,8 +94,6 @@ class GameSever
 
   # Kill the program by writing to kill pipe
   ExitByPipe.join do
-    puts "Game Results:"
-    puts "============="
     STATES.last.each do |k, v|
       puts [k, v.conf, v.score].join(',')
     end
