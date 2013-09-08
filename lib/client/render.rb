@@ -25,7 +25,7 @@ class Render
     @ident      = ident
   end
 
-  # Sweet use of a cloure bro
+  # Sweet use of a clousre bro
   def player_lambda client
     ->() do
       @win.setpos client.pos_y, client.pos_x
@@ -50,7 +50,7 @@ class Render
   end
 
   def update_score
-    log "You Scored: #{me.score}"
+    log "Your Score: #{me.score}"
   end
 
   def log(msg)
