@@ -1,6 +1,6 @@
 require 'curses'
-require_relative '../debug_log'
-include Debug
+#require_relative './debug_log'
+#include Debug
 
 Curses.init_screen
 Curses.start_color

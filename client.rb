@@ -6,18 +6,18 @@ require 'json'
 require 'curses'
 require_relative './lib/client/render'
 require_relative './lib/client/state'
-require_relative './lib/title_screen'
-require_relative './lib/options'
+require_relative './lib/client/title_screen'
+require_relative './lib/client/options'
 
 options = Options.parse!
-require_relative './lib/debug_log' if options.debug
+require_relative './lib/client/debug_log' if options.debug
 
 SHIP            = ARGV[0]
 CLIENT_PORT     = options.client_port
 SERVER_IP       = options.server_ip
 SERVER_PORT     = options.server_port
 SOCK            = UDPSocket.new.tap{ |s| s.connect(SERVER_IP, SERVER_PORT) }
-GAME_WIN_HEIGHT = 10
+GAME_WIN_HEIGHT = 30
 GAME_WIN_WIDTH  = 60
 LOG_WIN_HEIGHT  = 1
 UPDATES         = []
