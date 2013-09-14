@@ -33,32 +33,32 @@ class GameSever
   SERVER_PORT     = 9000
   CYCLE_TIME      = 1
 
-  CLIENTS    = [{}]
+  @client_updates    = [{}]
   Thread.new do
     Socket.udp_server_loop(SERVER_PORT) do |msg, msg_src|
       remote  = msg_src.remote_address
       ip      = remote.ip_address
       data    = JSON.parse(msg)
       port    = data["port"]
-      clients = CLIENTS.last.clone
+      clients = @client_updates.last.clone
       client  = Client.new data["conf"], ip, port, ClientReq.new, data["win_width"], data["win_height"]
       key     = client.ident
       clients[key] ||= client
       clients[key].req.add_mvmts data["mvmt"]
-      CLIENTS << clients
+      @client_updates << clients
     end
   end
 
   # Pull in the previous state and us it as a seed, 
-  # applying changes from the CLIENTS stack to work out
+  # applying changes from the @client_updates stack to work out
   # the new position and the new scores
   #
   # Lesson learned: Don't use the new state as the base, use the
   # old state as the base an FF changes on top of it  **mind blown**
-  STATES  = [{}]
+  @game_states  = [{}]
   def self.calc_state
-    clients = CLIENTS.last.clone
-    states  = STATES.last.clone
+    clients = @client_updates.last.clone
+    states  = @game_states.last.clone
     
     # Every client not in state gets added
     states_inited = clients.keys.inject(states) do |memo, client_ip|
@@ -72,8 +72,7 @@ class GameSever
     scored_clients = moved_clients.merge(moved_clients) do |key, ov|
       ov.calc_colision(moved_clients)
     end
-    STATES << scored_clients
-    #p scored_clients.values.map &:score
+    @game_states << scored_clients
     scored_clients
   end
 
@@ -94,7 +93,7 @@ class GameSever
 
   # Kill the program by writing to kill pipe
   ExitByPipe.join do
-    STATES.last.each do |k, v|
+    @game_states.last.each do |k, v|
       puts [k, v.conf, v.score].join(',')
     end
   end
