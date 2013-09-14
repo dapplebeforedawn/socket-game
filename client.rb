@@ -20,10 +20,11 @@ SOCK            = UDPSocket.new.tap{ |s| s.connect(SERVER_IP, SERVER_PORT) }
 GAME_WIN_HEIGHT = 30
 GAME_WIN_WIDTH  = 60
 LOG_WIN_HEIGHT  = 1
-UPDATES         = []
+@game_states    = []
 
 def ship_valid?
-  SHIP.length == 4 &&
+  return false unless SHIP
+  SHIP.length == 4  &&
   SHIP.match(/.*[aeiouy].*[aeiouy].*/i)
 end
 abort("Your ship configuration needs to be 4 charaters with two vowels") unless ship_valid?
@@ -61,9 +62,9 @@ end
 # Listen for server state updates
 Thread.new do
   Socket.udp_server_loop(CLIENT_PORT) do |msg, msg_src|
-    new_state = State.new(JSON.parse(msg))
-    old_state = UPDATES.last
-    UPDATES   << new_state
+    new_state       = State.new(JSON.parse(msg))
+    old_state       = @game_states.last
+    @game_states   << new_state
     render = Render.new(@win, @log, new_state, old_state, ident)
     render.draw
     render.update_score

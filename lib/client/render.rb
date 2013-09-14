@@ -2,18 +2,15 @@ require 'curses'
 #require_relative './debug_log'
 #include Debug
 
-Curses.init_screen
-Curses.start_color
-Curses.noecho
-Curses.stdscr.keypad(true) # enable arrow keys
-at_exit { Curses.close_screen }
-
 class Render
-  COLOR_OFF       = 0
-  DAMAGE_COLOR    = 1
-  SCORE_COLOR     = 2
+  Curses.init_screen
+  Curses.start_color
+  Curses.noecho
+  DAMAGE_COLOR  = 100
+  SCORE_COLOR   = 200
   Curses.init_pair DAMAGE_COLOR, Curses::COLOR_WHITE, Curses::COLOR_RED
   Curses.init_pair SCORE_COLOR,  Curses::COLOR_WHITE, Curses::COLOR_BLUE
+  at_exit { Curses.close_screen }
 
   def initialize(win, log, new_state, old_state, ident)
     @win        = win
@@ -23,6 +20,28 @@ class Render
     @new_state  = new_state
     @old_state  = old_state
     @ident      = ident
+  end
+
+  def update_score
+    log "Your Score: #{me.score}"
+  end
+
+  def log(msg)
+    @log.clear
+    @log.setpos 0, 0
+    @log.addstr msg
+    @log.refresh
+  end
+
+  def draw
+    @win.clear
+    @win.box("|", "-")
+    @new_state.clients.each do |client|
+      player_lambda(client)[]
+    end
+    my_player = @new_state.clients.find {|c| isMe? c }
+    colorize &player_lambda(my_player)
+    @win.refresh
   end
 
   # Sweet use of a clousre bro
@@ -37,28 +56,7 @@ class Render
       @win.addch  client.conf.slice(3)
     end
   end
-
-  def draw
-    @win.clear
-    @win.box("|", "-")
-    @new_state.clients.each do |client|
-      player_lambda(client)[]
-    end
-    my_player = @new_state.clients.find {|c| isMe? c }
-    colorize &player_lambda(my_player)
-    @win.refresh
-  end
-
-  def update_score
-    log "Your Score: #{me.score}"
-  end
-
-  def log(msg)
-    @log.clear
-    @log.setpos 0, 0
-    @log.addstr msg
-    @log.refresh
-  end
+  private :player_lambda
 
   def me
     @new_state.clients.find { |state| state.ident == @ident }
